@@ -1,0 +1,30 @@
+{
+  "name": "duckvideo",
+  "version": "1.0.0",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "@tabler/core": "^1.5.1",
+    "@tabler/icons-vue": "^3.46.0",
+    "@tauri-apps/api": "^2.11.1",
+    "lucide-vue-next": "^1.0.0",
+    "simple-icons": "^16.31.0",
+    "vue": "^3.5.22"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.21",
+    "vue-tsc": "^2.2.12"
+  }
+}
