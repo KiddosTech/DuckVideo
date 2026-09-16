@@ -71,9 +71,11 @@ jobs:
           curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux" \
             -o "src-tauri/binaries/yt-dlp-${{ matrix.target-triple }}"
           chmod +x "src-tauri/binaries/yt-dlp-${{ matrix.target-triple }}"
-          curl -L "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" -o ffmpeg.tar.xz
+          curl -L "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz" \
+            -o ffmpeg.tar.xz
+          file ffmpeg.tar.xz
           tar -xf ffmpeg.tar.xz
-          cp ffmpeg-*-amd64-static/ffmpeg "src-tauri/binaries/ffmpeg-${{ matrix.target-triple }}"
+          cp ffmpeg-master-latest-linux64-gpl/bin/ffmpeg "src-tauri/binaries/ffmpeg-${{ matrix.target-triple }}"
           chmod +x "src-tauri/binaries/ffmpeg-${{ matrix.target-triple }}"
 
       - name: Download Windows sidecars
@@ -99,9 +101,11 @@ jobs:
           curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos" \
             -o "src-tauri/binaries/yt-dlp-${{ matrix.target-triple }}"
           chmod +x "src-tauri/binaries/yt-dlp-${{ matrix.target-triple }}"
-          curl -L "https://evermeet.cx/ffmpeg/getrelease/zip" -o ffmpeg.zip
-          unzip -q ffmpeg.zip
-          mv ffmpeg "src-tauri/binaries/ffmpeg-${{ matrix.target-triple }}"
+          curl -L "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-macos64-gpl.tar.xz" \
+            -o ffmpeg.tar.xz
+          file ffmpeg.tar.xz
+          tar -xf ffmpeg.tar.xz
+          cp ffmpeg-master-latest-macos64-gpl/bin/ffmpeg "src-tauri/binaries/ffmpeg-${{ matrix.target-triple }}"
           chmod +x "src-tauri/binaries/ffmpeg-${{ matrix.target-triple }}"
 
       - name: Build Tauri app
