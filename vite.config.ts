@@ -23,6 +23,7 @@ export default defineConfig({
         index: resolve(__dirname, 'index.html'),
         download: resolve(__dirname, 'download.html'),
         compress: resolve(__dirname, 'compress.html'),
+        logs: resolve(__dirname, 'logs.html'),
         about: resolve(__dirname, 'about.html'),
         settings: resolve(__dirname, 'settings.html')
       }

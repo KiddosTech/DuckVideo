@@ -41,6 +41,6 @@
     ],
     "category": "Utility",
     "shortDescription": "Media downloader and optimizer",
-    "longDescription": "DuckVideo Studio is a static-hosting-ready and Tauri-ready media download planner and local optimizer."
+    "longDescription": "DuckVideo Studio is a local desktop media downloader and optimizer powered by yt-dlp, FFmpeg, and Tauri."
   }
 }

@@ -60,19 +60,20 @@
             <div class="col-12">
               <section class="card hero-card">
                 <div class="card-body">
-                  <span class="badge bg-primary-lt mb-3">Static hosting ready</span>
-                  <h2 class="hero-title">One interface for static web hosting and a Tauri desktop app.</h2>
+                  <span class="badge bg-primary-lt mb-3">Powered by yt-dlp and FFmpeg</span>
+                  <h2 class="hero-title">A local desktop downloader with a built-in headless command engine.</h2>
                   <p class="text-secondary hero-copy">
-                    Use Download to prepare media jobs, Compress to shrink local image files, and Settings to connect
-                    an API adapter when platform media requires a backend resolver.
+                    DuckVideo runs desktop-first through Tauri. Use yt-dlp for platform downloads, FFmpeg for local
+                    compression, and DuckVideo-CLI for the upcoming standalone command workflow.
                   </p>
                   <div class="btn-list">
                     <a class="btn btn-primary" href="./download.html">Start downloading</a>
-                    <a class="btn btn-outline-primary" href="./compress.html">Compress file</a>
+                    <a class="btn btn-outline-primary" href="./logs.html">Open logs</a>
                   </div>
                 </div>
               </section>
             </div>
+            <div class="col-12"><PreviewPanel /></div>
             <div class="col-12"><PlatformPanel :platforms="platforms" /></div>
             <div class="col-12"><DesktopPanel /></div>
           </div>
@@ -83,6 +84,9 @@
             </div>
             <div class="col-lg-4">
               <PlatformPanel :platforms="platforms" />
+            </div>
+            <div class="col-12">
+              <PreviewPanel />
             </div>
             <div class="col-12">
               <DesktopPanel />
@@ -109,8 +113,13 @@
 
           <div v-else-if="page === 'settings'" class="row row-cards">
             <div class="col-lg-6"><SettingsCard /></div>
-            <div class="col-lg-6"><ApiCard /></div>
+            <div class="col-lg-6"><CliCard /></div>
             <div class="col-12"><DesktopPanel /></div>
+          </div>
+
+          <div v-else-if="page === 'logs'" class="row row-cards">
+            <div class="col-lg-5"><CliCard /></div>
+            <div class="col-lg-7"><LogsPanel /></div>
           </div>
 
           <div v-else class="row row-cards">
@@ -119,8 +128,8 @@
                 <div class="card-header"><h3 class="card-title">About DuckVideo</h3></div>
                 <div class="card-body">
                   <p class="text-secondary">
-                    DuckVideo is built as a static web app with Vue, TypeScript, and Tabler, and it can also be bundled
-                    as a desktop application with Tauri.
+                    DuckVideo is a local desktop application built with Vue, TypeScript, Tabler, and Tauri. Its media
+                    engine is designed around yt-dlp, FFmpeg, and the planned standalone DuckVideo-CLI.
                   </p>
                   <div class="row g-3 mb-3">
                     <div class="col-sm-6">
@@ -139,8 +148,8 @@
                     </div>
                   </div>
                   <div class="alert alert-warning mb-0">
-                    Downloads from platforms such as YouTube or TikTok require official APIs or a backend adapter that
-                    follows each platform's rules. Static hosting cannot bypass CORS, login walls, or DRM.
+                    Downloads from platforms such as YouTube or TikTok are processed locally through yt-dlp. Users are
+                    responsible for following platform terms, copyright rules, and local law.
                   </div>
                 </div>
               </section>
@@ -149,8 +158,8 @@
               <section class="card">
                 <div class="card-header"><h3 class="card-title">Build targets</h3></div>
                 <div class="list-group list-group-flush">
-                  <div class="list-group-item"><IconShieldCheck size="20" class="me-2 text-green" />Static hosting: folder dist</div>
-                  <div class="list-group-item"><IconBrandGithub size="20" class="me-2 text-primary" />GitHub Actions: installer Tauri</div>
+                  <div class="list-group-item"><IconShieldCheck size="20" class="me-2 text-green" />Desktop app: Tauri runtime</div>
+                  <div class="list-group-item"><IconBrandGithub size="20" class="me-2 text-primary" />DuckVideo-CLI: headless command workflow</div>
                   <div class="list-group-item"><IconVideo size="20" class="me-2 text-azure" />Desktop app: src-tauri</div>
                 </div>
               </section>
@@ -194,10 +203,10 @@ import SimpleBrandIcon from './components/SimpleBrandIcon.vue';
 import logoUrl from '../duckvideo.svg';
 import { checkDesktopTools, compressDesktopMedia, downloadDesktopMedia, isDesktopRuntime } from './desktop';
 import type { ProcessResult, ToolStatus } from './desktop';
-import { compressImage, createDownloadJob, fileToAsset, formatBytes } from './mediaTools';
+import { compressImage, createDownloadJob, detectPlatform, fileToAsset, formatBytes } from './mediaTools';
 import type { DownloadJob, LocalAsset, Platform } from './types';
 
-type PageId = 'home' | 'download' | 'compress' | 'about' | 'settings';
+type PageId = 'home' | 'download' | 'compress' | 'about' | 'settings' | 'logs';
 type BrandPlatform = Omit<Platform, 'icon'> & { icon: SimpleIcon };
 
 const page = ((document.body.dataset.page as PageId | undefined) ?? 'home');
@@ -206,16 +215,18 @@ const navItems: Array<{ page: PageId; label: string; href: string; icon: Compone
   { page: 'home', label: 'Home', href: './index.html', icon: IconHome },
   { page: 'download', label: 'Downloader', href: './download.html', icon: IconWorldDownload },
   { page: 'compress', label: 'Optimizer', href: './compress.html', icon: IconFileZip },
+  { page: 'logs', label: 'Logs', href: './logs.html', icon: IconInfoCircle },
   { page: 'about', label: 'About', href: './about.html', icon: IconInfoCircle },
   { page: 'settings', label: 'Settings', href: './settings.html', icon: IconSettings }
 ];
 
 const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
-  home: { eyebrow: 'Static and desktop media suite', title: 'DuckVideo Studio' },
-  download: { eyebrow: 'Download planner', title: 'Install video, images, and audio' },
+  home: { eyebrow: 'Local desktop media suite', title: 'DuckVideo Studio' },
+  download: { eyebrow: 'yt-dlp download planner', title: 'Download video, images, and audio locally' },
   compress: { eyebrow: 'Local optimizer', title: 'Reduce file size without changing the content' },
-  about: { eyebrow: 'Architecture', title: 'Static hosting plus Tauri app' },
-  settings: { eyebrow: 'Output policy', title: 'Settings and API adapter' }
+  about: { eyebrow: 'Architecture', title: 'Tauri app plus DuckVideo-CLI' },
+  settings: { eyebrow: 'Desktop engine', title: 'Settings and command engine' },
+  logs: { eyebrow: 'Process monitor', title: 'Logs and command output' }
 };
 
 const directPlatform: Platform = {
@@ -256,6 +267,10 @@ const desktopInputPath = ref('');
 const desktopBusy = ref(false);
 const desktopLastResult = ref<ProcessResult | null>(null);
 const desktopAvailable = isDesktopRuntime();
+const desktopLogs = ref<string[]>([
+  '[DuckVideo] Desktop log system ready.',
+  '[DuckVideo-CLI] Standalone command mode is planned for release builds.'
+]);
 
 const imageAssets = computed(() => assets.value.filter((asset) => asset.type === 'image'));
 const compressedCount = computed(() => assets.value.filter((asset) => asset.status === 'Compressed').length);
@@ -266,9 +281,16 @@ const savedBytesLabel = computed(() => {
   }, 0);
   return formatBytes(total);
 });
+const previewPlatform = computed(() => (mediaUrl.value ? detectPlatform(mediaUrl.value, platforms) : directPlatform));
+const previewMode = computed(() => (previewPlatform.value.id === 'direct' ? 'Direct media file' : 'yt-dlp platform job'));
+const previewCommand = computed(() => {
+  const url = mediaUrl.value || '<media-url>';
+  return `duckvideo-cli download --url "${url}" --format ${selectedFormat.value.toLowerCase()} --quality ${selectedQuality.value}`;
+});
 
 const queueDownload = () => {
   jobs.value.unshift(createDownloadJob(mediaUrl.value, platforms, selectedFormat.value, selectedQuality.value));
+  appendDesktopLog(`[DuckVideo] Queued ${selectedFormat.value}/${selectedQuality.value} job for ${mediaUrl.value || 'empty URL'}.`);
   mediaUrl.value = '';
 };
 
@@ -300,6 +322,12 @@ const clearQueue = () => {
   });
   jobs.value = [];
   assets.value = [];
+  appendDesktopLog('[DuckVideo] Queue cleared.');
+};
+
+const appendDesktopLog = (line: string) => {
+  const timestamp = new Date().toLocaleTimeString();
+  desktopLogs.value = [...desktopLogs.value, `[${timestamp}] ${line}`].slice(-200);
 };
 
 const refreshDesktopTools = async () => {
@@ -311,8 +339,12 @@ const refreshDesktopTools = async () => {
     desktopStatus.value = await checkDesktopTools();
     desktopOutputDir.value ||= desktopStatus.value.output_dir;
     desktopMessage.value = 'Desktop tools are ready to use.';
+    appendDesktopLog('[DuckVideo] Tool check completed.');
+    appendDesktopLog(`[yt-dlp] ${desktopStatus.value.yt_dlp.version || desktopStatus.value.yt_dlp.path || 'not found'}`);
+    appendDesktopLog(`[FFmpeg] ${desktopStatus.value.ffmpeg.version || desktopStatus.value.ffmpeg.path || 'not found'}`);
   } catch (error) {
     desktopMessage.value = error instanceof Error ? error.message : String(error);
+    appendDesktopLog(`[DuckVideo] Tool check failed: ${desktopMessage.value}`);
   }
 };
 
@@ -323,6 +355,7 @@ const runDesktopDownload = async () => {
   }
   desktopBusy.value = true;
   desktopMessage.value = 'Running yt-dlp locally...';
+  appendDesktopLog(`[yt-dlp] Starting download for ${mediaUrl.value}`);
   try {
     desktopLastResult.value = await downloadDesktopMedia({
       url: mediaUrl.value,
@@ -331,8 +364,13 @@ const runDesktopDownload = async () => {
       outputDir: desktopOutputDir.value
     });
     desktopMessage.value = desktopLastResult.value.success ? 'Download completed.' : 'Download finished with errors.';
+    appendDesktopLog(`[yt-dlp] ${desktopMessage.value}`);
+    if (desktopLastResult.value.command) appendDesktopLog(`[DuckVideo-CLI] ${desktopLastResult.value.command}`);
+    if (desktopLastResult.value.stdout) appendDesktopLog(desktopLastResult.value.stdout);
+    if (desktopLastResult.value.stderr) appendDesktopLog(desktopLastResult.value.stderr);
   } catch (error) {
     desktopMessage.value = error instanceof Error ? error.message : String(error);
+    appendDesktopLog(`[yt-dlp] Failed: ${desktopMessage.value}`);
   } finally {
     desktopBusy.value = false;
   }
@@ -345,6 +383,7 @@ const runDesktopCompress = async () => {
   }
   desktopBusy.value = true;
   desktopMessage.value = 'Running FFmpeg locally...';
+  appendDesktopLog(`[FFmpeg] Starting compression for ${desktopInputPath.value}`);
   try {
     desktopLastResult.value = await compressDesktopMedia({
       inputPath: desktopInputPath.value,
@@ -353,8 +392,13 @@ const runDesktopCompress = async () => {
       outputDir: desktopOutputDir.value
     });
     desktopMessage.value = desktopLastResult.value.success ? 'Compression completed.' : 'Compression finished with errors.';
+    appendDesktopLog(`[FFmpeg] ${desktopMessage.value}`);
+    if (desktopLastResult.value.command) appendDesktopLog(`[DuckVideo-CLI] ${desktopLastResult.value.command}`);
+    if (desktopLastResult.value.stdout) appendDesktopLog(desktopLastResult.value.stdout);
+    if (desktopLastResult.value.stderr) appendDesktopLog(desktopLastResult.value.stderr);
   } catch (error) {
     desktopMessage.value = error instanceof Error ? error.message : String(error);
+    appendDesktopLog(`[FFmpeg] Failed: ${desktopMessage.value}`);
   } finally {
     desktopBusy.value = false;
   }
@@ -395,7 +439,7 @@ const DownloadPlanner = defineComponent({
           <h3 class="card-title">Download planner</h3>
           <p class="card-subtitle">Create a job from a platform URL or a direct media file.</p>
         </div>
-        <span class="badge bg-primary-lt ms-auto">API adapter ready</span>
+        <span class="badge bg-primary-lt ms-auto">yt-dlp ready</span>
       </div>
       <div class="card-body">
         <form class="row g-3" @submit.prevent="queueDownload">
@@ -553,17 +597,92 @@ const SettingsCard = defineComponent({
   `
 });
 
-const ApiCard = defineComponent({
+const CliCard = defineComponent({
   setup() {
-    return { apiEndpoint };
+    return { previewCommand, desktopOutputDir };
   },
   template: `
     <section class="card">
-      <div class="card-header"><h3 class="card-title">API adapter</h3></div>
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">DuckVideo-CLI</h3>
+          <p class="card-subtitle">Headless command workflow for DuckVideo desktop automation.</p>
+        </div>
+        <span class="badge bg-azure-lt">Standalone planned</span>
+      </div>
       <div class="card-body">
-        <label class="form-label">Resolver endpoint</label>
-        <input v-model="apiEndpoint" class="form-control" />
-        <p class="text-secondary mt-3 mb-0">For static hosting, this endpoint can point to a serverless function or a separate backend.</p>
+        <p class="text-secondary">
+          DuckVideo-CLI is the planned built-in command mode for users who want the same yt-dlp and FFmpeg engine without opening the graphical interface.
+        </p>
+        <label class="form-label">Command preview</label>
+        <pre class="desktop-log">{{ previewCommand }}</pre>
+        <label class="form-label mt-3">Default output folder</label>
+        <input v-model="desktopOutputDir" class="form-control" placeholder="Downloads/DuckVideo Studio" />
+      </div>
+    </section>
+  `
+});
+
+const PreviewPanel = defineComponent({
+  components: { SimpleBrandIcon },
+  setup() {
+    return {
+      mediaUrl,
+      selectedFormat,
+      selectedQuality,
+      previewPlatform,
+      previewMode,
+      previewCommand
+    };
+  },
+  template: `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Preview</h3>
+          <p class="card-subtitle">Inspect how DuckVideo will route the current media job before running yt-dlp.</p>
+        </div>
+        <span class="badge bg-primary-lt">{{ previewMode }}</span>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 align-items-center">
+          <div class="col-auto">
+            <span class="avatar avatar-lg" :style="{ backgroundColor: previewPlatform.color + '18', color: previewPlatform.color }">
+              <component v-if="previewPlatform.id === 'direct'" :is="previewPlatform.icon" />
+              <SimpleBrandIcon v-else :icon="previewPlatform.icon" />
+            </span>
+          </div>
+          <div class="col">
+            <div class="h3 mb-1">{{ previewPlatform.name }}</div>
+            <div class="text-secondary text-truncate">{{ mediaUrl || 'No URL entered yet' }}</div>
+          </div>
+          <div class="col-md-auto">
+            <span class="badge bg-blue-lt me-2">{{ selectedFormat }}</span>
+            <span class="badge bg-green-lt">{{ selectedQuality }}</span>
+          </div>
+        </div>
+        <label class="form-label mt-3">DuckVideo-CLI preview</label>
+        <pre class="desktop-log">{{ previewCommand }}</pre>
+      </div>
+    </section>
+  `
+});
+
+const LogsPanel = defineComponent({
+  setup() {
+    return { desktopLogs };
+  },
+  template: `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Logs</h3>
+          <p class="card-subtitle">Process output from DuckVideo, yt-dlp, FFmpeg, and DuckVideo-CLI.</p>
+        </div>
+        <span class="badge bg-primary-lt">{{ desktopLogs.length }} entries</span>
+      </div>
+      <div class="card-body">
+        <pre class="desktop-log logs-panel">{{ desktopLogs.join('\\n') }}</pre>
       </div>
     </section>
   `
@@ -592,7 +711,7 @@ const DesktopPanel = defineComponent({
           <p class="card-subtitle">The Tauri app can use bundled yt-dlp and FFmpeg without a server.</p>
         </div>
         <span class="badge" :class="desktopAvailable ? 'bg-green-lt' : 'bg-secondary-lt'">
-          {{ desktopAvailable ? 'Tauri runtime' : 'Web preview' }}
+          {{ desktopAvailable ? 'Tauri runtime' : 'Desktop UI preview' }}
         </span>
       </div>
       <div class="card-body">

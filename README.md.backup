@@ -18,7 +18,7 @@
 
 ## Overview
 
-DuckVideo Studio is a desktop media utility for downloading and optimizing media locally. It uses Tauri to connect a Vue interface with native commands, allowing the app to run `yt-dlp` and FFmpeg directly on the user's machine without a custom server.
+DuckVideo Studio is a desktop media utility for downloading and optimizing media locally. It uses Tauri to connect a Vue interface with native commands, allowing the app to run `yt-dlp`, FFmpeg, and the planned DuckVideo-CLI directly on the user's machine without a custom server.
 
 The app is focused on a local-first workflow: paste a media URL, choose the output format and quality, download with `yt-dlp`, then optionally compress or convert media with FFmpeg.
 
@@ -31,6 +31,9 @@ The app is focused on a local-first workflow: paste a media URL, choose the outp
   - `check_tools`
   - `download_media`
   - `compress_media`
+- Preview system for planned media jobs
+- Logs view for DuckVideo, `yt-dlp`, FFmpeg, and DuckVideo-CLI output
+- DuckVideo-CLI command preview for the upcoming standalone/headless workflow
 - `yt-dlp` support for desktop media download workflows
 - FFmpeg support for local compression workflows
 - App icon based on `duckvideo.svg`
@@ -43,6 +46,7 @@ Vue UI
   -> Tauri command
     -> yt-dlp downloads media locally
     -> FFmpeg compresses or converts media locally
+    -> DuckVideo-CLI exposes the same workflow as headless commands
   -> output is saved to the user's machine
 ```
 
@@ -63,6 +67,7 @@ This means development can use locally installed tools, while release builds can
 | Desktop | Tauri 2, Rust |
 | Media download | yt-dlp |
 | Compression | FFmpeg |
+| Headless mode | DuckVideo-CLI |
 
 ## Project Structure
 
