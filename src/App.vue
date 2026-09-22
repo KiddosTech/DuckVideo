@@ -60,11 +60,11 @@
             <div class="col-12">
               <section class="card hero-card">
                 <div class="card-body">
-                  <span class="badge bg-primary-lt mb-3">Powered by yt-dlp and FFmpeg</span>
+                  <span class="badge bg-primary-lt mb-3">Local desktop media engine</span>
                   <h2 class="hero-title">A local desktop downloader with a built-in headless command engine.</h2>
                   <p class="text-secondary hero-copy">
-                    DuckVideo runs desktop-first through Tauri. Use yt-dlp for platform downloads, FFmpeg for local
-                    compression, and DuckVideo-CLI for the upcoming standalone command workflow.
+                    DuckVideo runs desktop-first through Tauri. Use the local downloader for platform media, optimize
+                    files without sending them to a server, and prepare headless workflows through DuckVideo-CLI.
                   </p>
                   <div class="btn-list">
                     <a class="btn btn-primary" href="./download.html">Start downloading</a>
@@ -129,7 +129,7 @@
                 <div class="card-body">
                   <p class="text-secondary">
                     DuckVideo is a local desktop application built with Vue, TypeScript, Tabler, and Tauri. Its media
-                    engine is designed around yt-dlp, FFmpeg, and the planned standalone DuckVideo-CLI.
+                    engine is designed around local desktop processing and the planned standalone DuckVideo-CLI.
                   </p>
                   <div class="row g-3 mb-3">
                     <div class="col-sm-6">
@@ -148,7 +148,7 @@
                     </div>
                   </div>
                   <div class="alert alert-warning mb-0">
-                    Downloads from platforms such as YouTube or TikTok are processed locally through yt-dlp. Users are
+                    Downloads from platforms such as YouTube or TikTok are processed locally on your desktop. Users are
                     responsible for following platform terms, copyright rules, and local law.
                   </div>
                 </div>
@@ -222,7 +222,7 @@ const navItems: Array<{ page: PageId; label: string; href: string; icon: Compone
 
 const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
   home: { eyebrow: 'Local desktop media suite', title: 'DuckVideo Studio' },
-  download: { eyebrow: 'yt-dlp download planner', title: 'Download video, images, and audio locally' },
+  download: { eyebrow: 'Local download planner', title: 'Download video, images, and audio locally' },
   compress: { eyebrow: 'Local optimizer', title: 'Reduce file size without changing the content' },
   about: { eyebrow: 'Architecture', title: 'Tauri app plus DuckVideo-CLI' },
   settings: { eyebrow: 'Desktop engine', title: 'Settings and command engine' },
@@ -282,7 +282,23 @@ const savedBytesLabel = computed(() => {
   return formatBytes(total);
 });
 const previewPlatform = computed(() => (mediaUrl.value ? detectPlatform(mediaUrl.value, platforms) : directPlatform));
-const previewMode = computed(() => (previewPlatform.value.id === 'direct' ? 'Direct media file' : 'yt-dlp platform job'));
+const previewMode = computed(() => (previewPlatform.value.id === 'direct' ? 'Direct media file' : 'Desktop platform job'));
+const previewReadiness = computed(() => (mediaUrl.value ? 'Ready to queue' : 'Waiting for source'));
+const previewOutputName = computed(() => {
+  const platformSlug = previewPlatform.value.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'media';
+  const extension = selectedFormat.value === 'Original' ? 'original' : selectedFormat.value.toLowerCase();
+  return `duckvideo-${platformSlug}-${selectedQuality.value.toLowerCase()}.${extension}`;
+});
+const previewRoute = computed(() =>
+  previewPlatform.value.id === 'direct'
+    ? 'Direct file import -> browser-safe processing -> output queue'
+    : 'Platform URL -> desktop downloader -> output queue'
+);
+const previewSteps = computed(() => [
+  'Inspect source and platform',
+  `Prepare ${selectedFormat.value} output at ${selectedQuality.value}`,
+  `Save result as ${previewOutputName.value}`
+]);
 const previewCommand = computed(() => {
   const url = mediaUrl.value || '<media-url>';
   return `duckvideo-cli download --url "${url}" --format ${selectedFormat.value.toLowerCase()} --quality ${selectedQuality.value}`;
@@ -340,7 +356,7 @@ const refreshDesktopTools = async () => {
     desktopOutputDir.value ||= desktopStatus.value.output_dir;
     desktopMessage.value = 'Desktop tools are ready to use.';
     appendDesktopLog('[DuckVideo] Tool check completed.');
-    appendDesktopLog(`[yt-dlp] ${desktopStatus.value.yt_dlp.version || desktopStatus.value.yt_dlp.path || 'not found'}`);
+    appendDesktopLog(`[Downloader] ${desktopStatus.value.yt_dlp.version || desktopStatus.value.yt_dlp.path || 'not found'}`);
     appendDesktopLog(`[FFmpeg] ${desktopStatus.value.ffmpeg.version || desktopStatus.value.ffmpeg.path || 'not found'}`);
   } catch (error) {
     desktopMessage.value = error instanceof Error ? error.message : String(error);
@@ -354,8 +370,8 @@ const runDesktopDownload = async () => {
     return;
   }
   desktopBusy.value = true;
-  desktopMessage.value = 'Running yt-dlp locally...';
-  appendDesktopLog(`[yt-dlp] Starting download for ${mediaUrl.value}`);
+  desktopMessage.value = 'Running local downloader...';
+  appendDesktopLog(`[Downloader] Starting download for ${mediaUrl.value}`);
   try {
     desktopLastResult.value = await downloadDesktopMedia({
       url: mediaUrl.value,
@@ -364,13 +380,13 @@ const runDesktopDownload = async () => {
       outputDir: desktopOutputDir.value
     });
     desktopMessage.value = desktopLastResult.value.success ? 'Download completed.' : 'Download finished with errors.';
-    appendDesktopLog(`[yt-dlp] ${desktopMessage.value}`);
-    if (desktopLastResult.value.command) appendDesktopLog(`[DuckVideo-CLI] ${desktopLastResult.value.command}`);
+    appendDesktopLog(`[Downloader] ${desktopMessage.value}`);
+    if (desktopLastResult.value.command) appendDesktopLog(`[DuckVideo-CLI] ${previewCommand.value}`);
     if (desktopLastResult.value.stdout) appendDesktopLog(desktopLastResult.value.stdout);
     if (desktopLastResult.value.stderr) appendDesktopLog(desktopLastResult.value.stderr);
   } catch (error) {
     desktopMessage.value = error instanceof Error ? error.message : String(error);
-    appendDesktopLog(`[yt-dlp] Failed: ${desktopMessage.value}`);
+    appendDesktopLog(`[Downloader] Failed: ${desktopMessage.value}`);
   } finally {
     desktopBusy.value = false;
   }
@@ -439,7 +455,7 @@ const DownloadPlanner = defineComponent({
           <h3 class="card-title">Download planner</h3>
           <p class="card-subtitle">Create a job from a platform URL or a direct media file.</p>
         </div>
-        <span class="badge bg-primary-lt ms-auto">yt-dlp ready</span>
+        <span class="badge bg-primary-lt ms-auto">Desktop ready</span>
       </div>
       <div class="card-body">
         <form class="row g-3" @submit.prevent="queueDownload">
@@ -612,7 +628,7 @@ const CliCard = defineComponent({
       </div>
       <div class="card-body">
         <p class="text-secondary">
-          DuckVideo-CLI is the planned built-in command mode for users who want the same yt-dlp and FFmpeg engine without opening the graphical interface.
+          DuckVideo-CLI is the planned built-in command mode for users who want the same desktop media engine without opening the graphical interface.
         </p>
         <label class="form-label">Command preview</label>
         <pre class="desktop-log">{{ previewCommand }}</pre>
@@ -632,7 +648,14 @@ const PreviewPanel = defineComponent({
       selectedQuality,
       previewPlatform,
       previewMode,
-      previewCommand
+      previewReadiness,
+      previewOutputName,
+      previewRoute,
+      previewSteps,
+      previewCommand,
+      desktopOutputDir,
+      queueDownload,
+      logoUrl
     };
   },
   template: `
@@ -640,25 +663,60 @@ const PreviewPanel = defineComponent({
       <div class="card-header">
         <div>
           <h3 class="card-title">Preview</h3>
-          <p class="card-subtitle">Inspect how DuckVideo will route the current media job before running yt-dlp.</p>
+          <p class="card-subtitle">Inspect the current media job before starting the desktop engine.</p>
         </div>
-        <span class="badge bg-primary-lt">{{ previewMode }}</span>
+        <span class="badge bg-primary-lt">{{ previewReadiness }}</span>
       </div>
       <div class="card-body">
-        <div class="row g-3 align-items-center">
-          <div class="col-auto">
-            <span class="avatar avatar-lg" :style="{ backgroundColor: previewPlatform.color + '18', color: previewPlatform.color }">
-              <component v-if="previewPlatform.id === 'direct'" :is="previewPlatform.icon" />
-              <SimpleBrandIcon v-else :icon="previewPlatform.icon" />
-            </span>
+        <div class="row g-4 align-items-stretch">
+          <div class="col-lg-5">
+            <div class="preview-stage" :style="{ '--preview-brand': previewPlatform.color }">
+              <img class="preview-logo" :src="logoUrl" alt="DuckVideo logo" />
+              <div class="preview-platform">
+                <span class="avatar avatar-lg" :style="{ backgroundColor: previewPlatform.color + '18', color: previewPlatform.color }">
+                  <component v-if="previewPlatform.id === 'direct'" :is="previewPlatform.icon" />
+                  <SimpleBrandIcon v-else :icon="previewPlatform.icon" />
+                </span>
+                <div>
+                  <div class="h3 mb-1">{{ previewPlatform.name }}</div>
+                  <div class="text-secondary">{{ previewMode }}</div>
+                </div>
+              </div>
+              <div class="preview-source text-truncate">{{ mediaUrl || 'Paste a media URL to preview it here' }}</div>
+            </div>
           </div>
-          <div class="col">
-            <div class="h3 mb-1">{{ previewPlatform.name }}</div>
-            <div class="text-secondary text-truncate">{{ mediaUrl || 'No URL entered yet' }}</div>
-          </div>
-          <div class="col-md-auto">
-            <span class="badge bg-blue-lt me-2">{{ selectedFormat }}</span>
-            <span class="badge bg-green-lt">{{ selectedQuality }}</span>
+          <div class="col-lg-7">
+            <div class="preview-grid">
+              <div>
+                <div class="text-secondary small text-uppercase fw-bold">Format</div>
+                <div class="h3 mb-0">{{ selectedFormat }}</div>
+              </div>
+              <div>
+                <div class="text-secondary small text-uppercase fw-bold">Quality</div>
+                <div class="h3 mb-0">{{ selectedQuality }}</div>
+              </div>
+              <div>
+                <div class="text-secondary small text-uppercase fw-bold">Output name</div>
+                <div class="text-truncate fw-bold">{{ previewOutputName }}</div>
+              </div>
+              <div>
+                <div class="text-secondary small text-uppercase fw-bold">Destination</div>
+                <div class="text-truncate fw-bold">{{ desktopOutputDir || 'Downloads/DuckVideo Studio' }}</div>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="text-secondary small text-uppercase fw-bold mb-2">Route</div>
+              <div class="text-secondary">{{ previewRoute }}</div>
+            </div>
+            <div class="mt-3">
+              <div class="text-secondary small text-uppercase fw-bold mb-2">Steps</div>
+              <ol class="preview-steps">
+                <li v-for="step in previewSteps" :key="step">{{ step }}</li>
+              </ol>
+            </div>
+            <button class="btn btn-primary mt-3" type="button" :disabled="!mediaUrl" @click="queueDownload">
+              Queue this preview
+            </button>
           </div>
         </div>
         <label class="form-label mt-3">DuckVideo-CLI preview</label>
@@ -677,7 +735,7 @@ const LogsPanel = defineComponent({
       <div class="card-header">
         <div>
           <h3 class="card-title">Logs</h3>
-          <p class="card-subtitle">Process output from DuckVideo, yt-dlp, FFmpeg, and DuckVideo-CLI.</p>
+          <p class="card-subtitle">Process output from DuckVideo, the desktop engines, and DuckVideo-CLI.</p>
         </div>
         <span class="badge bg-primary-lt">{{ desktopLogs.length }} entries</span>
       </div>
@@ -708,7 +766,7 @@ const DesktopPanel = defineComponent({
       <div class="card-header">
         <div>
           <h3 class="card-title">Desktop local engine</h3>
-          <p class="card-subtitle">The Tauri app can use bundled yt-dlp and FFmpeg without a server.</p>
+          <p class="card-subtitle">The Tauri app can use bundled desktop engines without a server.</p>
         </div>
         <span class="badge" :class="desktopAvailable ? 'bg-green-lt' : 'bg-secondary-lt'">
           {{ desktopAvailable ? 'Tauri runtime' : 'Desktop UI preview' }}
@@ -718,7 +776,7 @@ const DesktopPanel = defineComponent({
         <div class="row g-3">
           <div class="col-md-6">
             <div class="border rounded p-3 h-100">
-              <div class="text-secondary small text-uppercase fw-bold">yt-dlp</div>
+              <div class="text-secondary small text-uppercase fw-bold">Download engine</div>
               <div class="h3 mb-1">{{ desktopStatus?.yt_dlp.available ? 'Available' : 'Missing' }}</div>
               <div class="text-secondary text-truncate">{{ desktopStatus?.yt_dlp.version || desktopStatus?.yt_dlp.path || 'Not checked' }}</div>
             </div>
@@ -738,7 +796,7 @@ const DesktopPanel = defineComponent({
             <IconBrandSpeedtest size="18" class="me-2" />Check tools
           </button>
           <button class="btn btn-primary" type="button" :disabled="desktopBusy || !desktopAvailable" @click="runDesktopDownload">
-            <IconDownload size="18" class="me-2" />Download with yt-dlp
+            <IconDownload size="18" class="me-2" />Download locally
           </button>
         </div>
         <div class="alert mt-3 mb-0" :class="desktopAvailable ? 'alert-info' : 'alert-warning'">

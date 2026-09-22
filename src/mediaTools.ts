@@ -32,9 +32,9 @@ export const createDownloadJob = (
     format,
     quality,
     status: needsDesktopTool ? 'Desktop Ready' : 'Ready',
-    estimatedSize: needsDesktopTool ? 'yt-dlp job' : quality === 'Original' ? 'Original' : '12-48 MB',
+    estimatedSize: needsDesktopTool ? 'Desktop job' : quality === 'Original' ? 'Original' : '12-48 MB',
     note: needsDesktopTool
-      ? 'The desktop app can process this through local yt-dlp.'
+      ? 'The desktop app can process this through the local download engine.'
       : 'Direct files can be processed by the browser if CORS allows access.'
   };
 };

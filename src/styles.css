@@ -89,6 +89,63 @@ body {
   margin: 0.2rem 0 0;
 }
 
+.preview-stage {
+  display: flex;
+  min-height: 15rem;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--preview-brand), #ffffff 76%);
+  border-radius: var(--tblr-border-radius);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--preview-brand), #ffffff 90%), #ffffff 52%),
+    #ffffff;
+}
+
+.preview-logo {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.7rem;
+  box-shadow: 0 0.4rem 1.2rem rgba(32, 107, 196, 0.18);
+}
+
+.preview-platform {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.preview-source {
+  padding: 0.75rem;
+  color: var(--tblr-secondary);
+  border-radius: var(--tblr-border-radius);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.preview-grid > div {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  background: var(--tblr-bg-surface-secondary);
+}
+
+.preview-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--tblr-secondary);
+}
+
+.preview-steps li + li {
+  margin-top: 0.35rem;
+}
+
 .desktop-log {
   max-height: 14rem;
   overflow: auto;
@@ -122,5 +179,9 @@ body {
 
   .top-nav .btn:not(.btn-icon) {
     flex: 1;
+  }
+
+  .preview-grid {
+    grid-template-columns: 1fr;
   }
 }
