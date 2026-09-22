@@ -16,12 +16,15 @@ jobs:
           - platform: ubuntu-22.04
             artifact-name: duckvideo-linux
             target-triple: x86_64-unknown-linux-gnu
+            bundle-label: AppImage
           - platform: windows-latest
             artifact-name: duckvideo-windows
             target-triple: x86_64-pc-windows-msvc
+            bundle-label: Windows Installer
           - platform: macos-13
             artifact-name: duckvideo-macos
             target-triple: x86_64-apple-darwin
+            bundle-label: macOS DMG
 
     runs-on: ${{ matrix.platform }}
 
@@ -43,6 +46,7 @@ jobs:
             libssl-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
+            libfuse2 \
             xz-utils
 
       - name: Setup Node.js
@@ -108,17 +112,33 @@ jobs:
           cp ffmpeg-master-latest-macos64-gpl/bin/ffmpeg "src-tauri/binaries/ffmpeg-${{ matrix.target-triple }}"
           chmod +x "src-tauri/binaries/ffmpeg-${{ matrix.target-triple }}"
 
-      - name: Build Tauri app
+      - name: Build Tauri app (${{ matrix.bundle-label }})
         run: npm run tauri:build
 
-      - name: Upload installers
+      - name: Upload Linux AppImage
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact-name }}
+          name: ${{ matrix.artifact-name }}-appimage
+          path: src-tauri/target/release/bundle/**/*.AppImage
+          if-no-files-found: error
+
+      - name: Upload Windows installers
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}-installers
           path: |
             src-tauri/target/release/bundle/**/*.msi
             src-tauri/target/release/bundle/**/*.exe
+          if-no-files-found: error
+
+      - name: Upload macOS bundles
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}-bundles
+          path: |
             src-tauri/target/release/bundle/**/*.dmg
             src-tauri/target/release/bundle/**/*.app.tar.gz
-            src-tauri/target/release/bundle/**/*.AppImage
           if-no-files-found: error
